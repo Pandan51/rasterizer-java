@@ -91,7 +91,10 @@ public class App {
 
                 double angle = AngleCalculator.getAngle(a,b);
 
-                throw new RuntimeException("This is the angle: "+ angle);
+//                throw new RuntimeException("This is the angle: "+ angle +
+//                        " This is the A: "+ a.getX() +", " + a.getY() +
+//                        " This is the B: "+ b.getX() +", " + b.getY());
+
 //                CreateLine();
             }
 

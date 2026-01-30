@@ -43,7 +43,7 @@ public class AngleCalculator {
             int sideLength = Math.toIntExact(Math.round((double) (Math.abs(x_diff) + Math.abs(y_diff)) / 2));
 
             int newX_B = x_B > x_A ? x_A + sideLength : x_A - sideLength;
-            int newY_B = x_B > x_A ? y_A + sideLength : y_A - sideLength;
+            int newY_B = y_B > y_A ? y_A + sideLength : y_A - sideLength;
 
             newPoint = new Point(newX_B, newY_B);
         }
