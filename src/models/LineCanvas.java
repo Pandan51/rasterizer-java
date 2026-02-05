@@ -5,11 +5,13 @@ import java.util.List;
 import models.Line;
 
 public class LineCanvas {
-    private ArrayList<Line> lines;
+    private final ArrayList<Line> lines;
+    private final ArrayList<Polygon> polygons;
 
     public LineCanvas()
     {
         lines = new ArrayList<Line>();
+        polygons = new ArrayList<Polygon>();
     }
 
     public void addLine(Line line)
@@ -24,6 +26,20 @@ public class LineCanvas {
 
     public ArrayList<Line> getLines(){
         return lines;
+    }
+
+    public void addPolygon(Polygon polygon)
+    {
+        polygons.add(polygon);
+    }
+
+    public void clearPolygons()
+    {
+        polygons.clear();
+    }
+
+    public ArrayList<Polygon> getPolygons(){
+        return polygons;
     }
 
 }

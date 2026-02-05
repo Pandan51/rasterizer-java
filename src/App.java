@@ -29,6 +29,7 @@ public class App {
     private final JPanel panel;
     private final LineCanvas lineCanvas;
 
+
     private final Raster raster;
     private final CanvasRasterizer canvasRasterizer;
 
@@ -40,6 +41,7 @@ public class App {
     Point a, b;
     boolean isDottedMode = false;
     boolean isSnapMode = false;
+    boolean polygonMode = false;
 
 
     public static void main(String[] args) {
@@ -64,6 +66,7 @@ public class App {
         mouseAdapter = new MouseAdapter(){
             @Override
             public void mousePressed(MouseEvent e) {
+
                 a = new Point(e.getX(), e.getY());
             }
 
@@ -91,7 +94,7 @@ public class App {
 
                 double angle = AngleCalculator.getAngle(a,b);
 
-                throw new RuntimeException("This is the angle: "+ angle);
+//                throw new RuntimeException("This is the angle: "+ angle);
 //                CreateLine();
             }
 
@@ -136,6 +139,10 @@ public class App {
                     isSnapMode = true;
 //                    throw new RuntimeException("Shift is held");
                 }
+                else if(e.getKeyCode() == KeyEvent.VK_X){
+                    polygonMode = true;
+                    throw new RuntimeException("X is held");
+                }
             }
 
             @Override
@@ -146,6 +153,10 @@ public class App {
                 else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
                     isSnapMode = false;
 //                    throw new RuntimeException("Shift is released");
+                }
+                else if(e.getKeyCode() == KeyEvent.VK_X){
+                    polygonMode = false;
+                    throw new RuntimeException("X is released");
                 }
             }
 

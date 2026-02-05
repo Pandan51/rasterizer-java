@@ -135,13 +135,14 @@ public class TrivRasterizer implements Rasterizer {
 
             for (int x = x1; x <= x2; x+=incrementValue) {
                 int y = (int) Math.round(k * x + q);
-                try {
-                    raster.setPixel(x, y, color);
-                }
-                catch (Exception e)
-                {
-
-                }
+                raster.setPixel(x, y, color);
+//                try {
+//                    raster.setPixel(x, y, color);
+//                }
+//                catch (Exception e)
+//                {
+//                    throw new RuntimeException("Out of range");
+//                }
             }
         } else {
             // Strmý sklon - iterujeme podle Y
@@ -159,14 +160,14 @@ public class TrivRasterizer implements Rasterizer {
 
                 for (int y = y1; y <= y2; y+=incrementValue) {
                     int x = (int) Math.round(k_inv * y + q_inv);
-//                    raster.setPixel(x, y, color);
-                    try {
-                        raster.setPixel(x, y, color);
-                    }
-                    catch (Exception e)
-                    {
-                        break;
-                    }
+                    raster.setPixel(x, y, color);
+//                    try {
+//                        raster.setPixel(x, y, color);
+//                    }
+//                    catch (Exception e)
+//                    {
+//                        throw new RuntimeException("Out of range");
+//                    }
                 }
             } else {
                 // Případ, kdy je čára jen jeden bod
