@@ -2,6 +2,7 @@ import math.AngleCalculator;
 import models.Line;
 import models.LineCanvas;
 import models.LineDotted;
+import models.Polygon;
 import rasterizers.Rasterizer;
 import rasterizers.TrivRasterizer;
 import rasters.Raster;
@@ -21,6 +22,9 @@ import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
+import java.awt.event.ActionEvent;
+
+
 
 import models.Point;
 
@@ -28,6 +32,7 @@ public class App {
 
     private final JPanel panel;
     private final LineCanvas lineCanvas;
+
 
 
     private final Raster raster;
@@ -66,8 +71,15 @@ public class App {
         mouseAdapter = new MouseAdapter(){
             @Override
             public void mousePressed(MouseEvent e) {
-
                 a = new Point(e.getX(), e.getY());
+                if(polygonMode)
+                {
+                    if(lineCanvas.getPolygons().isEmpty())
+                    {
+                        lineCanvas.addPolygon(new Polygon());
+                    }
+                    lineCanvas.getPolygons().getLast().addPoint(a);
+                }
             }
 
             @Override
@@ -122,50 +134,102 @@ public class App {
     }
 
     // Když zmáčknuta klávesa
-    void createKeyCallbacks() {
-        panel.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                // Check for the specific key, e.g., the 'D' key or Shift
-                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
-                    isDottedMode = true;
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_C) {
-                    clear(0xaaaaaa);
-                    lineCanvas.clearLines();
-                    panel.repaint();
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
-                    isSnapMode = true;
-//                    throw new RuntimeException("Shift is held");
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_X){
-                    polygonMode = true;
-                    throw new RuntimeException("X is held");
-                }
-            }
+//    void createKeyCallbacks() {
+//        panel.addKeyListener(new KeyAdapter() {
+//            @Override
+//            public void keyPressed(KeyEvent e) {
+//                // Check for the specific key, e.g., the 'D' key or Shift
+//                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+//                    isDottedMode = true;
+//                }
+//                else if(e.getKeyCode() == KeyEvent.VK_C) {
+//                    clear(0xaaaaaa);
+//                    lineCanvas.clearLines();
+//                    lineCanvas.clearPolygons();
+//                    panel.repaint();
+//                }
+//                else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
+//                    isSnapMode = true;
+////                    throw new RuntimeException("Shift is held");
+//                }
+//                else if(e.getKeyCode() == KeyEvent.VK_X){
+//                    polygonMode = true;
+//
+//                    throw new RuntimeException("X is held");
+//                }
+//            }
+//
+//            @Override
+//            public void keyReleased(KeyEvent e) {
+//                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+//                    isDottedMode = false;
+//                }
+//                else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
+//                    isSnapMode = false;
+////                    throw new RuntimeException("Shift is released");
+//                }
+//                else if(e.getKeyCode() == KeyEvent.VK_X){
+//                    polygonMode = false;
+//                    throw new RuntimeException("X is released");
+//                }
+//            }
+//
+//        });
+//
+//        // CRITICAL: Panels aren't focusable by default.
+//        // Without these lines, KeyListener will never fire.
+//        panel.setFocusable(true);
+//        panel.requestFocusInWindow();
+//    }
 
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
-                    isDottedMode = false;
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
-                    isSnapMode = false;
-//                    throw new RuntimeException("Shift is released");
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_X){
-                    polygonMode = false;
-                    throw new RuntimeException("X is released");
-                }
-            }
+private void createKeyBindings() {
+    InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+    ActionMap actionMap = panel.getActionMap();
 
+    // Define the Keys
+    setupBinding(inputMap, actionMap, "X", KeyEvent.VK_X);
+    setupBinding(inputMap, actionMap, "SHIFT", KeyEvent.VK_SHIFT);
+    setupBinding(inputMap, actionMap, "CONTROL", KeyEvent.VK_CONTROL);
+
+    // Special case for 'C' (Instant Trigger)
+    inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, 0), "clearCanvas");
+    actionMap.put("clearCanvas", new AbstractAction() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            clear(0xaaaaaa);
+            lineCanvas.clearLines();
+            lineCanvas.clearPolygons();
+            panel.repaint();
+        }
+    });
+}
+
+    private void setupBinding(InputMap im, ActionMap am, String name, int keyCode) {
+        // 1. Action when Pressed
+        im.put(KeyStroke.getKeyStroke(keyCode, 0, false), name + "Pressed");
+        am.put(name + "Pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateKeyState(keyCode, true);
+            }
         });
 
-        // CRITICAL: Panels aren't focusable by default.
-        // Without these lines, KeyListener will never fire.
-        panel.setFocusable(true);
-        panel.requestFocusInWindow();
+        // 2. Action when Released
+        im.put(KeyStroke.getKeyStroke(keyCode, 0, true), name + "Released");
+        am.put(name + "Released", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateKeyState(keyCode, false);
+            }
+        });
+    }
+
+    private void updateKeyState(int keyCode, boolean isPressed) {
+        switch (keyCode) {
+            case KeyEvent.VK_X -> polygonMode = isPressed;
+            case KeyEvent.VK_SHIFT -> isSnapMode = isPressed;
+            case KeyEvent.VK_CONTROL -> isDottedMode = isPressed;
+        }
     }
 
     void CreateLine()
@@ -203,6 +267,13 @@ public class App {
         lineCanvas = new LineCanvas();
 //        angleCalculator = new AngleCalculator();
 
+        Polygon testPolygon = new Polygon();
+        testPolygon.addPoint(new Point(200,300));
+        testPolygon.addPoint(new Point(150,200));
+        testPolygon.addPoint(new Point(300,400));
+        testPolygon.addPoint(new Point(500,500));
+        testPolygon.addPoint(new Point(50,50));
+        lineCanvas.addPolygon(testPolygon);
 
 
         panel = new JPanel() {
@@ -227,7 +298,8 @@ public class App {
 
         //
         createMouseCallbacks();
-        createKeyCallbacks();
+//        createKeyCallbacks();
+        createKeyBindings();
 
 
     }

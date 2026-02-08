@@ -10,7 +10,7 @@ public class Polygon {
         points = new ArrayList<Point>();
     }
 
-    public void addLine(Point point)
+    public void addPoint(Point point)
     {
         points.add(point);
     }

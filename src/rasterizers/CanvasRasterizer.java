@@ -25,20 +25,15 @@ public class CanvasRasterizer{
         // TODO: Rasterize polygons in LineCanvas
         for(Polygon polygon : lineCanvas.getPolygons()){
             ArrayList<Point> points = polygon.getPoints();
+            if(points.size() > 2) {
 
-//            Point firstPoint = points.getFirst();
-//            Point lastPoint = points.getLast();
+                for (int pointA = 0; pointA < points.size()-1; pointA++) {
+                    int pointB = pointA + 1;
+                    lineRasterizer.rasterize(new Line(points.get(pointA), points.get(pointB), Color.RED));
+                }
 
-//            for(Line line : polygon.getPoints()){
-//                lineRasterizer.rasterize(line);
-//            }
-
-            for(int pointA = 0; pointA < points.size(); pointA++){
-                int pointB = pointA+1;
-                lineRasterizer.rasterize(new Line(points.get(pointA), points.get(pointB), Color.RED));
+                lineRasterizer.rasterize(new Line(points.getFirst(), points.getLast(), Color.RED));
             }
-
-            lineRasterizer.rasterize(new Line(points.getFirst(), points.getLast(), Color.RED));
         }
 
 
