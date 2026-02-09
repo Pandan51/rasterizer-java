@@ -22,7 +22,7 @@ public class CanvasRasterizer{
             lineRasterizer.rasterize(line);
         }
 
-        // TODO: Rasterize polygons in LineCanvas
+        // Rasterize polygons in LineCanvas
         for(Polygon polygon : lineCanvas.getPolygons()){
             ArrayList<Point> points = polygon.getPoints();
             if(points.size() > 2) {

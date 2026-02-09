@@ -64,4 +64,10 @@ public class AngleCalculator {
 
         return newPoint;
     }
+
+    public static Point getSnappedPoint(Point A, Point B)
+    {
+        double angle = getAngle(A,B);
+        return getSnappedB(A,B,angle);
+    }
 }
