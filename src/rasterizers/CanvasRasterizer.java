@@ -1,10 +1,9 @@
 package rasterizers;
 
 
-import models.Line;
-import models.LineCanvas;
-import models.Polygon;
+import models.*;
 import models.Point;
+import models.Polygon;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -26,13 +25,28 @@ public class CanvasRasterizer{
         for(Polygon polygon : lineCanvas.getPolygons()){
             ArrayList<Point> points = polygon.getPoints();
             if(points.size() > 2) {
-
+                Line tempLine;
                 for (int pointA = 0; pointA < points.size()-1; pointA++) {
                     int pointB = pointA + 1;
-                    lineRasterizer.rasterize(new Line(points.get(pointA), points.get(pointB), Color.RED));
+                    if(polygon.getLineType() == 1)
+                    {
+                        tempLine = new LineDotted(points.get(pointA), points.get(pointB), Color.RED, 5);
+                    }
+                    else {
+                        tempLine = new Line(points.get(pointA), points.get(pointB), Color.RED);
+                    }
+
+                    lineRasterizer.rasterize(tempLine);
                 }
 
-                lineRasterizer.rasterize(new Line(points.getFirst(), points.getLast(), Color.RED));
+                if(polygon.getLineType() == 1)
+                {
+                    tempLine = new LineDotted(points.getFirst(), points.getLast(), Color.RED, 5);
+                }
+                else {
+                    tempLine = new Line(points.getFirst(), points.getLast(), Color.RED);
+                }
+                lineRasterizer.rasterize(tempLine);
             }
         }
 

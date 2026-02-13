@@ -73,7 +73,7 @@ public class App {
                 {
                     if(lineCanvas.getPolygons().isEmpty())
                     {
-                        lineCanvas.addPolygon(new Polygon());
+                        lineCanvas.addPolygon(new Polygon(isDottedMode));
                     }
                     Polygon currentPolygon = lineCanvas.getPolygons().getLast();
                     Point temp;
@@ -168,7 +168,7 @@ public class App {
                 else if(e.getKeyCode() == KeyEvent.VK_X){
                     if(!isPolygonMode)
                     {
-                        lineCanvas.addPolygon(new Polygon());
+                        lineCanvas.addPolygon(new Polygon(isDottedMode));
                     }
                     isPolygonMode = true;
 
@@ -248,7 +248,7 @@ private void createKeyBindings() {
                 if(!isPolygonMode && isPressed)
                 {
                     isPolygonMode = true;
-                    lineCanvas.addPolygon(new Polygon());
+                    lineCanvas.addPolygon(new Polygon(isDottedMode));
 //                    throw new RuntimeException("New polygon");
                 }
                 else if (!isPressed)
@@ -323,7 +323,9 @@ private void createKeyBindings() {
         lineCanvas = new LineCanvas();
 //        angleCalculator = new AngleCalculator();
 
-        Polygon testPolygon = new Polygon();
+        // TODO: Pozdeji odstranit
+        // Test pro polygon
+        Polygon testPolygon = new Polygon(true);
         testPolygon.addPoint(new Point(200,300));
         testPolygon.addPoint(new Point(150,200));
         testPolygon.addPoint(new Point(300,400));
