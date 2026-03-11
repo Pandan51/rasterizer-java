@@ -33,5 +33,6 @@ public class Polygon {
     public ArrayList<Point> getPoints(){
         return points;
     }
+
     public int getLineType(){ return lineType;}
 }
