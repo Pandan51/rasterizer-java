@@ -1,5 +1,5 @@
 package models.Shapes;
 
-public class Circle {
+public class IShape {
 
 }

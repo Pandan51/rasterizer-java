@@ -3,6 +3,7 @@ import models.Line;
 import models.LineCanvas;
 import models.LineDotted;
 import models.Polygon;
+import models.Shapes.Rectangle;
 import rasterizers.TrivRasterizer;
 import rasters.Raster;
 import rasters.RasterBufferedImage;
@@ -19,7 +20,7 @@ import java.io.Serial;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.ActionEvent;
-
+import java.util.ArrayList;
 
 
 import models.Point;
@@ -360,6 +361,16 @@ private void createKeyBindings() {
         createKeyCallbacks();
         // Complicated
 //        createKeyBindings();
+
+        Rectangle rect;
+        Point test = new Point(100, 100);
+        rect = new Rectangle(new Point(50,50), test);
+        ArrayList<Point> arr = rect.getPoints();
+        for(int i = 0; i < 3; i++){
+            a = arr.get(i);
+            b = arr.get(++i);
+            CreateLine();
+        }
 
 
     }
