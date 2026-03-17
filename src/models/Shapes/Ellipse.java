@@ -5,18 +5,32 @@ import models.Polygon;
 import java.awt.*;
 
 public class Ellipse extends Polygon {
+    private Point center;
+    private int rx, ry;
+
     public Ellipse(Point center, int rx, int ry, Color color, boolean isDotted) {
         super(color, isDotted);
-        generatePoints(center, rx, ry, 64); // 64 segmentů pro hladký vzhled
+        this.center = center;
+        this.rx = rx;
+        this.ry = ry;
         this.setClosed(true);
+
+        // Vygenerování bodů pro kompatibilitu s polygonovými operacemi (např. hit-testing)
+        updateVertices();
     }
 
-    private void generatePoints(Point center, int rx, int ry, int segments) {
-        for (int i = 0; i < segments; i++) {
-            double theta = 2.0 * Math.PI * i / segments;
+    public void updateVertices() {
+        this.clearPoints();
+        // Generujeme 40 bodů pro vizuální aproximaci v seznamech
+        for (int i = 0; i < 40; i++) {
+            double theta = 2.0 * Math.PI * i / 40;
             int x = (int) Math.round(center.getX() + rx * Math.cos(theta));
             int y = (int) Math.round(center.getY() + ry * Math.sin(theta));
             this.addPoint(new Point(x, y));
         }
     }
+
+    public Point getCenter() { return center; }
+    public int getRx() { return rx; }
+    public int getRy() { return ry; }
 }

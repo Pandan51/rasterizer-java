@@ -1,391 +1,226 @@
 import math.AngleCalculator;
-import models.Line;
-import models.LineCanvas;
-import models.LineDotted;
+import models.*;
+import models.Point;
 import models.Polygon;
-//import models.Shapes.Rectangle;
 import models.Shapes.Ellipse;
-
+import models.Shapes.Rectangle;
 import rasterizers.TrivRasterizer;
 import rasters.Raster;
 import rasters.RasterBufferedImage;
 import rasterizers.CanvasRasterizer;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.event.*;
 import java.io.Serial;
-//import java.util.Scanner;
-
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 
-
-import models.Point;
-
+/**
+ * Hlavní třída aplikace sjednocující všechny funkce.
+ */
 public class App {
 
     private final JPanel panel;
     private final LineCanvas lineCanvas;
-
-
-
     private final Raster raster;
     private final CanvasRasterizer canvasRasterizer;
+    private final TrivRasterizer lineRasterizer;
 
-//    private final AngleCalculator angleCalculator;
+    private Point a, b;
+    private boolean isDottedMode = false;
+    private boolean isSnapMode = false;
+    private boolean isFilledMode = false; // Příznak, zda mají být nové tvary vyplněné
 
-    MouseAdapter mouseAdapter;
-    KeyListener keyListener;
-
-    Point a, b;
-    boolean isDottedMode = false;
-    boolean isSnapMode = false;
-    boolean isPolygonMode = false;
-
+    private enum Tool { LINE, RECTANGLE, ELLIPSE, POLYGON }
+    private Tool currentTool = Tool.LINE;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new App(800, 600).start());
     }
-    public void clear(int color) {
-        raster.setClearColor(color);
-        raster.clear();
-    }
-
-    public void present(Graphics graphics) {
-        raster.repaint(graphics);
-    }
-
-    public void start() {
-        clear(0xaaaaaa);
-        panel.repaint();
-    }
-
-    // Pohyby a kliknutí myši
-    void createMouseCallbacks(){
-        mouseAdapter = new MouseAdapter(){
-            @Override
-            public void mousePressed(MouseEvent e) {
-                a = new Point(e.getX(), e.getY());
-
-                if(isPolygonMode)
-                {
-                    if(lineCanvas.getPolygons().isEmpty())
-                    {
-                        lineCanvas.addPolygon(new Polygon(isDottedMode));
-                    }
-                    Polygon currentPolygon = lineCanvas.getPolygons().getLast();
-                    Point temp;
-                    if(isSnapMode && !currentPolygon.getPoints().isEmpty())
-                    {
-                        a = AngleCalculator.getSnappedPoint(currentPolygon.getPoints().getLast(), a);
-                    }
-                    currentPolygon.addPoint(a);
-                    clear(0xaaaaaa);
-                    panel.repaint();
-                    canvasRasterizer.rasterize(lineCanvas);
-                }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if(isPolygonMode)
-                {
-                    return;
-                }
-                b = new Point(e.getX(), e.getY());
-                Line line;
-                if(isSnapMode)
-                {
-                    double angle = AngleCalculator.getAngle(a,b);
-                    b = AngleCalculator.getSnappedB(a,b, angle);
-                }
-                if(isDottedMode)
-                {
-                    line = new LineDotted(a,b, Color.red, 5);
-                }
-                else {
-                    line = new Line(a, b, Color.red);
-                }
-                // V metodě mouseDragged nebo mouseReleased
-                Point center = a; // První kliknutí je střed
-                int rx = Math.abs(b.getX() - a.getX());
-                int ry = Math.abs(b.getY() - a.getY());
-
-// Vytvoření instance elipsy (např. s 40 segmenty)
-                Ellipse tempEllipse = new Ellipse(center, rx, ry, 40, isDottedMode);
-
-// Přidání do LineCanvas pro trvalé uložení nebo vykreslení v náhledu
-                lineCanvas.addPolygon(tempEllipse);
-                lineCanvas.addLine(line);
-                clear(0xaaaaaa);
-                panel.repaint();
-                canvasRasterizer.rasterize(lineCanvas);
-
-                double angle = AngleCalculator.getAngle(a,b);
-
-//                throw new RuntimeException("This is the angle: "+ angle);
-//                CreateLine();
-            }
-
-            @Override
-            public void mouseDragged(MouseEvent e)
-            {
-                if(isPolygonMode)
-                {
-                    return;
-                }
-                clear(0xaaaaaa);
-                canvasRasterizer.rasterize(lineCanvas);
-                b = new Point(e.getX(), e.getY());
-                if(isSnapMode)
-                {
-                    double angle = AngleCalculator.getAngle(a,b);
-                    b = AngleCalculator.getSnappedB(a,b, angle);
-                }
-                CreateLine();
-//                panel.repaint();
-            }
-
-
-        };
-
-        panel.addMouseListener(mouseAdapter);
-        panel.addMouseMotionListener(mouseAdapter);
-
-    }
-
-    // Když zmáčknuta klávesa
-    void createKeyCallbacks() {
-        panel.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                // Check for the specific key, e.g., the 'D' key or Shift
-                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
-                    isDottedMode = true;
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_C) {
-                    clear(0xaaaaaa);
-                    lineCanvas.clearLines();
-                    lineCanvas.clearPolygons();
-                    panel.repaint();
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
-                    isSnapMode = true;
-//                    throw new RuntimeException("Shift is held");
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_X){
-                    if(!isPolygonMode)
-                    {
-                        lineCanvas.addPolygon(new Polygon(isDottedMode));
-                    }
-                    isPolygonMode = true;
-
-//                    throw new RuntimeException("X is held");
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
-                    isDottedMode = false;
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_SHIFT){
-                    isSnapMode = false;
-//                    throw new RuntimeException("Shift is released");
-                }
-                else if(e.getKeyCode() == KeyEvent.VK_X){
-                    isPolygonMode = false;
-//                    throw new RuntimeException("X is released");
-                }
-            }
-
-        });
-
-        // CRITICAL: Panels aren't focusable by default.
-        // Without these lines, KeyListener will never fire.
-        panel.setFocusable(true);
-        panel.requestFocusInWindow();
-    }
-
-private void createKeyBindings() {
-    InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-    ActionMap actionMap = panel.getActionMap();
-
-    // Define the Keys
-    setupBinding(inputMap, actionMap, "X", KeyEvent.VK_X);
-    setupBinding(inputMap, actionMap, "SHIFT", KeyEvent.VK_SHIFT);
-    setupBinding(inputMap, actionMap, "CONTROL", KeyEvent.VK_CONTROL);
-
-    // Special case for 'C' (Instant Trigger)
-    inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, 0), "clearCanvas");
-    actionMap.put("clearCanvas", new AbstractAction() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            clear(0xaaaaaa);
-            lineCanvas.clearLines();
-            lineCanvas.clearPolygons();
-            panel.repaint();
-        }
-    });
-}
-
-    private void setupBinding(InputMap im, ActionMap am, String name, int keyCode) {
-        // 1. Action when Pressed
-        im.put(KeyStroke.getKeyStroke(keyCode, 0, false), name + "Pressed");
-        am.put(name + "Pressed", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                updateKeyState(keyCode, true);
-            }
-        });
-
-        // 2. Action when Released
-        im.put(KeyStroke.getKeyStroke(keyCode, 0, true), name + "Released");
-        am.put(name + "Released", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                updateKeyState(keyCode, false);
-            }
-        });
-    }
-
-    private void updateKeyState(int keyCode, boolean isPressed) {
-        switch (keyCode) {
-            case KeyEvent.VK_X -> {
-//                polygonMode = isPressed;
-                if(!isPolygonMode && isPressed)
-                {
-                    isPolygonMode = true;
-                    lineCanvas.addPolygon(new Polygon(isDottedMode));
-//                    throw new RuntimeException("New polygon");
-                }
-                else if (!isPressed)
-                {
-                    isPolygonMode = false;
-                }
-            }
-            case KeyEvent.VK_SHIFT -> {
-//                isSnapMode = isPressed;
-                if(isPressed)
-                {
-
-                    isSnapMode = true;
-                    System.out.println(isSnapMode);
-                }
-                else if (!isPressed)
-                {
-                    isSnapMode = false;
-                    System.out.println(isSnapMode);
-                }
-//                throw new RuntimeException("Shift action");
-            }
-            case KeyEvent.VK_CONTROL -> {
-                if(!isDottedMode && isPressed)
-                {
-                    isDottedMode = true;
-                    System.out.println(isDottedMode);
-                }
-                else if (!isPressed)
-                {
-                    isDottedMode = false;
-                    System.out.println(isDottedMode);
-                }
-//                isDottedMode = isPressed;
-//                throw new RuntimeException("Control action" + isPressed);
-            }
-        }
-    }
-
-    void CreateLine()
-    {
-        TrivRasterizer rasterizer = new TrivRasterizer(raster, Color.red);
-        Line line;
-        if(isSnapMode)
-        {
-            double angle = AngleCalculator.getAngle(a,b);
-            b = AngleCalculator.getSnappedB(a,b, angle);
-        }
-        if(isDottedMode)
-        {
-            line = new LineDotted(a,b, Color.red, 5);
-        }
-        else {
-            line = new Line(a, b, Color.red);
-        }
-        rasterizer.rasterize(line);
-        panel.repaint();
-    }
 
     public App(int width, int height) {
-        JFrame frame = new JFrame();
-
+        JFrame frame = new JFrame("PGRF1 Paint - Unified System");
         frame.setLayout(new BorderLayout());
-
-        frame.setTitle("Delta : " + this.getClass().getName());
-        frame.setResizable(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         raster = new RasterBufferedImage(width, height);
-        TrivRasterizer rasterizer = new TrivRasterizer(raster, Color.red);
-        canvasRasterizer = new CanvasRasterizer(rasterizer);
+        lineRasterizer = new TrivRasterizer(raster, Color.RED);
+        canvasRasterizer = new CanvasRasterizer(lineRasterizer);
         lineCanvas = new LineCanvas();
-//        angleCalculator = new AngleCalculator();
-
-        // TODO: Pozdeji odstranit
-        // Test pro polygon
-        Polygon testPolygon = new Polygon(true);
-        testPolygon.addPoint(new Point(200,300));
-        testPolygon.addPoint(new Point(150,200));
-        testPolygon.addPoint(new Point(300,400));
-        testPolygon.addPoint(new Point(500,500));
-        testPolygon.addPoint(new Point(50,50));
-        lineCanvas.addPolygon(testPolygon);
-
 
         panel = new JPanel() {
             @Serial
             private static final long serialVersionUID = 1L;
-
             @Override
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                present(g);
+                raster.repaint(g);
             }
         };
         panel.setPreferredSize(new Dimension(width, height));
-
 
         frame.add(panel, BorderLayout.CENTER);
         frame.pack();
         frame.setVisible(true);
 
-        panel.requestFocus();
-        panel.requestFocusInWindow();
-
-        //
-        createMouseCallbacks();
-
-        createKeyCallbacks();
-        // Complicated
-//        createKeyBindings();
-
-//        Rectangle rect;
-//        Point test = new Point(100, 100);
-//        rect = new Rectangle(new Point(50,50), test);
-//        ArrayList<Point> arr = rect.getPoints();
-//        for(int i = 0; i < 3; i++){
-//            a = arr.get(i);
-//            b = arr.get(++i);
-//            CreateLine();
-//        }
-
-
+        createCallbacks();
     }
 
+    private void start() {
+        redraw();
+    }
 
+    private void createCallbacks() {
+        MouseAdapter ma = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                Point clickPoint = new Point(e.getX(), e.getY());
+                if (currentTool == Tool.POLYGON) {
+                    if (SwingUtilities.isLeftMouseButton(e)) {
+                        handlePolygonPoint(clickPoint);
+                    } else if (SwingUtilities.isRightMouseButton(e)) {
+                        finishCurrentPolygon();
+                    }
+                } else {
+                    a = clickPoint;
+                }
+                panel.requestFocusInWindow();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (currentTool == Tool.POLYGON) return;
+                b = getFinalPoint(e.getX(), e.getY());
+                lineCanvas.addShape(createShape(a, b));
+                redraw();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (currentTool == Tool.POLYGON) return;
+                b = getFinalPoint(e.getX(), e.getY());
+                redraw();
+                renderPreview(createShape(a, b));
+            }
+        };
+
+        panel.addMouseListener(ma);
+        panel.addMouseMotionListener(ma);
+
+        panel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                switch (e.getKeyCode()) {
+                    case KeyEvent.VK_CONTROL -> isDottedMode = true;
+                    case KeyEvent.VK_SHIFT -> isSnapMode = true;
+                    case KeyEvent.VK_F -> {
+                        isFilledMode = !isFilledMode; // Přepnutí režimu výplně
+                        System.out.println("Fill Mode: " + (isFilledMode ? "ON" : "OFF"));
+                    }
+                    case KeyEvent.VK_C -> {
+                        lineCanvas.clear();
+                        redraw();
+                    }
+                    case KeyEvent.VK_ENTER -> finishCurrentPolygon();
+                    case KeyEvent.VK_1 -> currentTool = Tool.LINE;
+                    case KeyEvent.VK_2 -> currentTool = Tool.RECTANGLE;
+                    case KeyEvent.VK_3 -> currentTool = Tool.ELLIPSE;
+                    case KeyEvent.VK_4 -> currentTool = Tool.POLYGON;
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_CONTROL) isDottedMode = false;
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT) isSnapMode = false;
+            }
+        });
+        panel.setFocusable(true);
+        panel.requestFocusInWindow();
+    }
+
+    private Point getFinalPoint(int x, int y) {
+        Point p = new Point(x, y);
+        return isSnapMode ? AngleCalculator.getSnappedPoint(a, p) : p;
+    }
+
+    private Polygon createShape(Point p1, Point p2) {
+        Polygon shape = switch (currentTool) {
+            case LINE -> new Line(p1, p2, Color.RED, isDottedMode);
+            case RECTANGLE -> new Rectangle(p1, p2, Color.RED, isDottedMode);
+            case ELLIPSE -> {
+                int centerX = (p1.getX() + p2.getX()) / 2;
+                int centerY = (p1.getY() + p2.getY()) / 2;
+                Point center = new Point(centerX, centerY);
+                int rx = Math.abs(p2.getX() - p1.getX()) / 2;
+                int ry = Math.abs(p2.getY() - p1.getY()) / 2;
+                yield new Ellipse(center, rx, ry, Color.RED, isDottedMode);
+            }
+            default -> new Line(p1, p2, Color.RED, isDottedMode);
+        };
+
+        shape.setFilled(isFilledMode);
+        return shape;
+    }
+
+    private void handlePolygonPoint(Point p) {
+        ArrayList<models.Polygon> shapes = lineCanvas.getShapes();
+        models.Polygon poly;
+
+        if (shapes.isEmpty() || shapes.get(shapes.size() - 1).isClosed()) {
+            poly = new models.Polygon(Color.RED, isDottedMode);
+            poly.setClosed(false);
+            poly.setFilled(isFilledMode);
+            lineCanvas.addShape(poly);
+        } else {
+            poly = shapes.get(shapes.size() - 1);
+        }
+
+        // Snapping k předchozímu bodu
+        if (isSnapMode && !poly.getPoints().isEmpty()) {
+            p = AngleCalculator.getSnappedPoint(poly.getPoints().get(poly.getPoints().size() - 1), p);
+        }
+
+        poly.addPoint(p);
+        redraw();
+    }
+
+    private void finishCurrentPolygon() {
+        ArrayList<models.Polygon> shapes = lineCanvas.getShapes();
+        if (!shapes.isEmpty()) {
+            models.Polygon lastShape = shapes.get(shapes.size() - 1);
+            if (!lastShape.isClosed()) {
+                lastShape.setClosed(true);
+                redraw();
+            }
+        }
+    }
+
+    private void redraw() {
+        raster.setClearColor(0xaaaaaa);
+        raster.clear();
+        canvasRasterizer.rasterize(lineCanvas);
+        panel.repaint();
+    }
+
+    private void renderPreview(models.Polygon preview) {
+        // Pokud je zapnutá výplň, musíme ji nejdříve vykreslit v náhledu
+        if (preview.isFilled()) {
+            lineRasterizer.setColor(preview.getColor());
+            lineRasterizer.fillPolygon(preview);
+        }
+
+        if (preview instanceof Ellipse) {
+            lineRasterizer.setColor(preview.getColor());
+            lineRasterizer.rasterize((Ellipse) preview);
+        } else {
+            LineCanvas temp = new LineCanvas();
+            temp.addShape(preview);
+            canvasRasterizer.rasterize(temp);
+        }
+        panel.repaint();
+    }
 }

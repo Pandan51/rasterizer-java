@@ -8,6 +8,7 @@ public class Polygon {
     private int lineType; // 0 = plná, 1 = tečkovaná
     private Color color;
     private boolean isClosed;
+    private boolean isFilled;
 
     public Polygon(Color color, boolean isDotted) {
         this.points = new ArrayList<>();
@@ -38,6 +39,14 @@ public class Polygon {
 
     public void setClosed(boolean closed) {
         isClosed = closed;
+    }
+
+    public boolean isFilled() {
+        return isFilled;
+    }
+
+    public void setFilled(boolean filled) {
+        isFilled = filled;
     }
 
     public void clearPoints() {
