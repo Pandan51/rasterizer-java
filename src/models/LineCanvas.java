@@ -1,45 +1,24 @@
 package models;
 
 import java.util.ArrayList;
-import java.util.List;
-import models.Line;
 
 public class LineCanvas {
-    private final ArrayList<Line> lines;
-    private final ArrayList<Polygon> polygons;
+    // Sjednocený seznam pro všechny tvary (Line, Rectangle, Ellipse, Polygon)
+    private final ArrayList<Polygon> shapes;
 
-    public LineCanvas()
-    {
-        lines = new ArrayList<Line>();
-        polygons = new ArrayList<Polygon>();
+    public LineCanvas() {
+        shapes = new ArrayList<>();
     }
 
-    public void addLine(Line line)
-    {
-        lines.add(line);
+    public void addShape(Polygon shape) {
+        shapes.add(shape);
     }
 
-    public void clearLines()
-    {
-        lines.clear();
+    public void clear() {
+        shapes.clear();
     }
 
-    public ArrayList<Line> getLines(){
-        return lines;
+    public ArrayList<Polygon> getShapes() {
+        return shapes;
     }
-
-    public void addPolygon(Polygon polygon)
-    {
-        polygons.add(polygon);
-    }
-
-    public void clearPolygons()
-    {
-        polygons.clear();
-    }
-
-    public ArrayList<Polygon> getPolygons(){
-        return polygons;
-    }
-
 }

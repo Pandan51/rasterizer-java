@@ -3,7 +3,9 @@ import models.Line;
 import models.LineCanvas;
 import models.LineDotted;
 import models.Polygon;
-import models.Shapes.Rectangle;
+//import models.Shapes.Rectangle;
+import models.Shapes.Ellipse;
+
 import rasterizers.TrivRasterizer;
 import rasters.Raster;
 import rasters.RasterBufferedImage;
@@ -109,6 +111,16 @@ public class App {
                 else {
                     line = new Line(a, b, Color.red);
                 }
+                // V metodě mouseDragged nebo mouseReleased
+                Point center = a; // První kliknutí je střed
+                int rx = Math.abs(b.getX() - a.getX());
+                int ry = Math.abs(b.getY() - a.getY());
+
+// Vytvoření instance elipsy (např. s 40 segmenty)
+                Ellipse tempEllipse = new Ellipse(center, rx, ry, 40, isDottedMode);
+
+// Přidání do LineCanvas pro trvalé uložení nebo vykreslení v náhledu
+                lineCanvas.addPolygon(tempEllipse);
                 lineCanvas.addLine(line);
                 clear(0xaaaaaa);
                 panel.repaint();
@@ -362,15 +374,15 @@ private void createKeyBindings() {
         // Complicated
 //        createKeyBindings();
 
-        Rectangle rect;
-        Point test = new Point(100, 100);
-        rect = new Rectangle(new Point(50,50), test);
-        ArrayList<Point> arr = rect.getPoints();
-        for(int i = 0; i < 3; i++){
-            a = arr.get(i);
-            b = arr.get(++i);
-            CreateLine();
-        }
+//        Rectangle rect;
+//        Point test = new Point(100, 100);
+//        rect = new Rectangle(new Point(50,50), test);
+//        ArrayList<Point> arr = rect.getPoints();
+//        for(int i = 0; i < 3; i++){
+//            a = arr.get(i);
+//            b = arr.get(++i);
+//            CreateLine();
+//        }
 
 
     }

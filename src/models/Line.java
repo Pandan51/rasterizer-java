@@ -2,25 +2,17 @@ package models;
 
 import java.awt.*;
 
-public class Line {
-    Point a,  b;
-    Color color;
+import java.awt.*;
 
-    public Line(Point a, Point b, Color color) {
-        this.a = a;
-        this.b = b;
-        this.color = color;
+public class Line extends Polygon {
+    public Line(Point a, Point b, Color color, boolean isDotted) {
+        super(color, isDotted);
+        this.addPoint(a);
+        this.addPoint(b);
+        this.setClosed(false); // Úsečka se nespojuje zpět na začátek
     }
 
-    public Color getColor() {
-        return color;
-    }
-
-    public Point getB() {
-        return b;
-    }
-
-    public Point getA() {
-        return a;
-    }
+    // Pomocné metody pro kompatibilitu se starším kódem
+    public Point getA() { return points.get(0); }
+    public Point getB() { return points.get(1); }
 }

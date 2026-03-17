@@ -1,37 +1,19 @@
 package models.Shapes;
 
 import models.Point;
+import models.Polygon;
+import java.awt.*;
 
-import java.util.ArrayList;
+public class Rectangle extends Polygon {
+    public Rectangle(Point a, Point b, Color color, boolean isDotted) {
+        super(color, isDotted);
 
-public class Rectangle extends Shape {
-    private Point pointA;
-    private Point pointB;
+        // Vytvoření 4 bodů obdélníku
+        this.addPoint(a); // Horní levý (např.)
+        this.addPoint(new Point(b.getX(), a.getY())); // Horní pravý
+        this.addPoint(b); // Dolní pravý
+        this.addPoint(new Point(a.getX(), b.getY())); // Dolní levý
 
-    public Point getPointA() {
-        return pointA;
+        this.setClosed(true); // Obdélník je uzavřený
     }
-
-    public Point getPointB() {
-        return pointB;
-    }
-
-    public Rectangle(Point A, Point B){
-        pointA = A;
-        pointB = B;
-    }
-
-    @Override
-    public ArrayList<Point> getPoints() {
-        int x_diff = pointA.getX() - pointB.getX();
-        int y_diff = pointA.getY() - pointB.getY();
-
-        Point x = new Point(x_diff, pointA.getY());
-        Point y = new Point(pointA.getX(), y_diff);
-        Point[] arr = {pointA, x, y, pointB};
-        return arr;
-
-    }
-
-
 }

@@ -1,38 +1,46 @@
 package models;
 
+import java.awt.*;
 import java.util.ArrayList;
 
 public class Polygon {
-    private ArrayList<Point> points;
-    //
-    private int lineType;
+    protected ArrayList<Point> points;
+    private int lineType; // 0 = plná, 1 = tečkovaná
+    private Color color;
+    private boolean isClosed;
 
-    public Polygon(boolean mode)
-    {
-        points = new ArrayList<Point>();
-        if(mode)
-        {
-            lineType = 1;
-        }
-        else
-        {
-            lineType = 0;
-        }
+    public Polygon(Color color, boolean isDotted) {
+        this.points = new ArrayList<>();
+        this.color = color;
+        this.lineType = isDotted ? 1 : 0;
+        this.isClosed = true; // Většina polygonů je uzavřená
     }
 
-    public void addPoint(Point point)
-    {
+    public void addPoint(Point point) {
         points.add(point);
     }
 
-    public void clearPoints()
-    {
-        points.clear();
-    }
-
-    public ArrayList<Point> getPoints(){
+    public ArrayList<Point> getPoints() {
         return points;
     }
 
-    public int getLineType(){ return lineType;}
+    public Color getColor() {
+        return color;
+    }
+
+    public int getLineType() {
+        return lineType;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
+    }
+
+    public void setClosed(boolean closed) {
+        isClosed = closed;
+    }
+
+    public void clearPoints() {
+        points.clear();
+    }
 }
