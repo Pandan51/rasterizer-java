@@ -5,6 +5,7 @@ import models.Point;
 import models.Polygon;
 import models.Shapes.Ellipse;
 import java.util.ArrayList;
+import java.awt.Color;
 
 public class CanvasRasterizer {
 
@@ -14,17 +15,20 @@ public class CanvasRasterizer {
         this.lineRasterizer = lineRasterizer;
     }
 
-    public void rasterize(LineCanvas lineCanvas) {
+    /**
+     * Vykreslí celé plátno s volitelným zvýrazněním vybraného objektu.
+     */
+    public void rasterize(LineCanvas lineCanvas, Polygon selectedPolygon) {
         for (Polygon shape : lineCanvas.getShapes()) {
             lineRasterizer.setThickness(shape.getThickness());
 
-            // 1. Výplň (použije barvu výplně)
+            // 1. Výplň
             if (shape.isFilled() && lineRasterizer instanceof TrivRasterizer) {
                 lineRasterizer.setColor(shape.getFillColor());
                 ((TrivRasterizer) lineRasterizer).fillPolygon(shape);
             }
 
-            // 2. Obrys (použije barvu čáry)
+            // 2. Obrys
             lineRasterizer.setColor(shape.getColor());
             if (shape instanceof Ellipse && ((Ellipse) shape).isPerfect()) {
                 lineRasterizer.rasterize((Ellipse) shape);
@@ -36,9 +40,33 @@ public class CanvasRasterizer {
                     drawEdge(points.get(i), points.get(i + 1), shape);
                 }
 
-                // Spojení konce se začátkem pouze pokud je tvar uzavřený
                 if (shape.isClosed() && points.size() > 2) {
                     drawEdge(points.get(points.size() - 1), points.get(0), shape);
+                }
+            }
+
+            // 3. Zvýraznění (Tečky / Úchopy) - vykreslíme pouze pro vybraný objekt
+            if (shape == selectedPolygon) {
+                drawSelectionHandles(shape);
+            }
+        }
+    }
+
+    /**
+     * Vykreslí malé čtverečky (úchopy) v každém vrcholu vybraného polygonu.
+     */
+    private void drawSelectionHandles(Polygon shape) {
+        lineRasterizer.setColor(Color.BLUE); // Úchopy budou modré
+        lineRasterizer.setThickness(1);
+
+        for (Point p : shape.getPoints()) {
+            // Vykreslíme čtvereček 5x5 pixelů centrovaný na bodě
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dy = -2; dy <= 2; dy++) {
+                    // Přímý přístup k triviálnímu rasterizéru pro vykreslení jednotlivých bodů
+                    if (lineRasterizer instanceof TrivRasterizer) {
+                        ((TrivRasterizer) lineRasterizer).rasterizePoint(p.getX() + dx, p.getY() + dy);
+                    }
                 }
             }
         }

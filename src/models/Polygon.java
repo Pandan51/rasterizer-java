@@ -9,11 +9,14 @@ public class Polygon {
     protected ArrayList<Point> points;
     private LineType lineType = LineType.SOLID;
     private Color color;
-    private Color fillColor; // Samostatná barva pro výplň
+    private Color fillColor;
     private int thickness = 1;
     private boolean isClosed;
     private boolean isFilled;
 
+    /**
+     * Unified constructor requiring all color properties.
+     */
     public Polygon(Color color, Color fillColor, LineType type) {
         this.points = new ArrayList<>();
         this.color = color;

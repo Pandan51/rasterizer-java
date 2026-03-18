@@ -2,14 +2,10 @@ package models;
 
 import java.awt.*;
 
-/**
- * Model úsečky.
- */
 public class Line extends Polygon {
     public Line(Point a, Point b, Color color, Polygon.LineType type) {
-        // Předáváme null pro fillColor, protože úsečka se nevyplňuje.
-        // Výplň lze nastavit později přes setFillColor.
-        super(color, null, type);
+        // Pass null or a default for fillColor as lines aren't typically filled
+        super(color, Color.WHITE, type);
         this.addPoint(a);
         this.addPoint(b);
         this.setClosed(false);

@@ -32,7 +32,7 @@ public class App {
     private boolean isSnapMode = false;
     private boolean isFilledMode = false;
     private Color currentColor = Color.RED;
-    private Color currentFillColor = Color.YELLOW; // Výchozí barva výplně
+    private Color currentFillColor = Color.YELLOW;
     private int currentThickness = 1;
 
     private enum Tool { LINE, RECTANGLE, SQUARE, ELLIPSE, CIRCLE, POLYGON, EDIT, MOVE, ERASE, DELETE, BUCKET }
@@ -42,15 +42,19 @@ public class App {
     private Polygon selectedPolygon = null;
     private Point lastMousePos = null;
 
+    // UI Components for synchronization
     private JButton colorBtn;
     private JButton fillColorBtn;
+    private JSlider thickSlider;
+    private JComboBox<String> styleCombo;
+    private JCheckBox fillCheck;
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new App(1100, 750).start());
+        SwingUtilities.invokeLater(() -> new App(1100, 750).redraw());
     }
 
     public App(int width, int height) {
-        JFrame frame = new JFrame("PGRF1 Paint - Pro System");
+        JFrame frame = new JFrame("Malovani");
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -79,7 +83,7 @@ public class App {
         mainCtrl.setBorder(new EmptyBorder(5, 5, 5, 5));
 
         JPanel toolPanel = new JPanel(new GridLayout(2, 6, 5, 5));
-        String[] toolNames = {"Čára", "Obd.", "Čtverec", "Elipsa", "Kruh", "Poly", "Edit", "Vybrat/Posun", "Smazat bod", "Smazat", "Kyblík"};
+        String[] toolNames = {"Čára", "Obd.", "Čtverec", "Elipsa", "Kruh", "Polygon", "Edit bodu", "Posun", "Smazani bodu", "Smazat obj.", "Kyblík"};
         Tool[] tools = Tool.values();
 
         for (int i = 0; i < toolNames.length; i++) {
@@ -124,7 +128,7 @@ public class App {
             panel.requestFocusInWindow();
         });
 
-        JSlider thickSlider = new JSlider(1, 20, 1);
+        thickSlider = new JSlider(1, 20, 1);
         thickSlider.addChangeListener(e -> {
             currentThickness = thickSlider.getValue();
             if (selectedPolygon != null) {
@@ -135,7 +139,7 @@ public class App {
         });
 
         String[] styles = {"Plná", "Tečkovaná", "Čárkovaná"};
-        JComboBox<String> styleCombo = new JComboBox<>(styles);
+        styleCombo = new JComboBox<>(styles);
         styleCombo.addActionListener(e -> {
             currentType = Polygon.LineType.values()[styleCombo.getSelectedIndex()];
             if (selectedPolygon != null) {
@@ -145,7 +149,7 @@ public class App {
             panel.requestFocusInWindow();
         });
 
-        JCheckBox fillCheck = new JCheckBox("Auto-výplň");
+        fillCheck = new JCheckBox("Auto-výplň");
         fillCheck.addActionListener(e -> {
             isFilledMode = fillCheck.isSelected();
             if (selectedPolygon != null) {
@@ -185,18 +189,7 @@ public class App {
 
                 if (isTransformationTool()) {
                     findSelection(e.getX(), e.getY());
-                    // Pokud jsme něco vybrali, synchronizujeme UI
-                    if (selectedPolygon != null) {
-                        currentColor = selectedPolygon.getColor();
-                        currentFillColor = selectedPolygon.getFillColor();
-                        currentThickness = selectedPolygon.getThickness();
-                        currentType = selectedPolygon.getLineType();
-                        isFilledMode = selectedPolygon.isFilled();
-
-                        // Aktualizace tlačítek v UI (pro vizuální zpětnou vazbu)
-                        colorBtn.setBackground(currentColor);
-                        fillColorBtn.setBackground(currentFillColor);
-                    }
+                    syncUIWithSelected();
                 }
 
                 if (selectedPolygon != null) {
@@ -226,7 +219,7 @@ public class App {
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (!isDrawingTool() || currentTool == Tool.POLYGON) {
-                    // Necháme vybraný objekt aktivní pro další úpravy barev, pokud jsme v módu MOVE/EDIT
+                    // Stay selected
                 } else {
                     b = getFinalPoint(e.getX(), e.getY(), currentTool);
                     lineCanvas.addShape(createShape(a, b, currentTool));
@@ -275,6 +268,23 @@ public class App {
         panel.requestFocusInWindow();
     }
 
+    private void syncUIWithSelected() {
+        if (selectedPolygon != null) {
+            currentColor = selectedPolygon.getColor();
+            currentFillColor = selectedPolygon.getFillColor();
+            currentThickness = selectedPolygon.getThickness();
+            currentType = selectedPolygon.getLineType();
+            isFilledMode = selectedPolygon.isFilled();
+
+            // Update UI components
+            colorBtn.setBackground(currentColor);
+            fillColorBtn.setBackground(currentFillColor);
+            thickSlider.setValue(currentThickness);
+            styleCombo.setSelectedIndex(currentType.ordinal());
+            fillCheck.setSelected(isFilledMode);
+        }
+    }
+
     private void findSelection(int x, int y) {
         selectedPoint = null; selectedPolygon = null;
         ArrayList<Polygon> shapes = lineCanvas.getShapes();
@@ -301,7 +311,7 @@ public class App {
             }
             default -> new Line(p1, p2, currentColor, currentType);
         };
-        shape.setFillColor(currentFillColor); // Nastavení barvy výplně
+        shape.setFillColor(currentFillColor);
         shape.setThickness(currentThickness);
         shape.setFilled(isFilledMode);
         return shape;
@@ -328,7 +338,16 @@ public class App {
             poly.setThickness(currentThickness);
             lineCanvas.addShape(poly);
         } else { poly = shapes.get(shapes.size() - 1); }
-        poly.addPoint(p); redraw();
+
+        // OPRAVA: Snapping k předchozímu bodu v rámci polygonu
+        if (isSnapMode && !poly.getPoints().isEmpty()) {
+            p = AngleCalculator.getSnappedPoint(poly.getPoints().get(poly.getPoints().size() - 1), p);
+        }
+
+        poly.addPoint(p);
+        selectedPolygon = poly;
+        syncUIWithSelected();
+        redraw();
     }
 
     private void finishCurrentPolygon() {
@@ -341,7 +360,8 @@ public class App {
 
     private void redraw() {
         raster.clear();
-        canvasRasterizer.rasterize(lineCanvas);
+        // Předáváme selectedPolygon, aby rasterizér věděl, kde vykreslit úchopy
+        canvasRasterizer.rasterize(lineCanvas, selectedPolygon);
         panel.repaint();
     }
 
@@ -357,12 +377,11 @@ public class App {
         } else {
             LineCanvas temp = new LineCanvas();
             temp.addShape(preview);
-            canvasRasterizer.rasterize(temp);
+            canvasRasterizer.rasterize(temp, preview);
         }
         panel.repaint();
     }
 
     private boolean isDrawingTool() { return currentTool.ordinal() <= Tool.POLYGON.ordinal(); }
     private boolean isTransformationTool() { return !isDrawingTool() && currentTool != Tool.BUCKET; }
-    private void start() { redraw(); }
 }

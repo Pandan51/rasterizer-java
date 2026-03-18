@@ -179,4 +179,9 @@ public class TrivRasterizer implements Rasterizer {
             }
         }
     }
+    public void rasterizePoint(int x, int y) {
+        if (x >= 0 && y >= 0 && x < raster.getWidth() && y < raster.getHeight()) {
+            raster.setPixel(x, y, color);
+        }
+    }
 }
