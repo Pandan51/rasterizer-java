@@ -6,8 +6,7 @@ public class LineDotted extends Line {
     private final int gap;
 
     public LineDotted(Point a, Point b, Color color, int gap) {
-        // Voláme konstruktor Line(Point a, Point b, Color color, boolean isDotted)
-        super(a, b, color, true);
+        super(a, b, color, Polygon.LineType.DOTTED);
         this.gap = gap;
     }
 

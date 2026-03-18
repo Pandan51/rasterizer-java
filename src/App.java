@@ -10,19 +10,17 @@ import rasters.RasterBufferedImage;
 import rasterizers.CanvasRasterizer;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GridLayout;
 import java.awt.event.*;
 import java.io.Serial;
 import java.util.ArrayList;
 
-/**
- * Hlavní třída aplikace sjednocující všechny funkce.
- */
 public class App {
-
     private final JPanel panel;
     private final LineCanvas lineCanvas;
     private final Raster raster;
@@ -30,191 +28,239 @@ public class App {
     private final TrivRasterizer lineRasterizer;
 
     private Point a, b;
-    private boolean isDottedMode = false;
-    private boolean isSnapMode = false;
-    private boolean isFilledMode = false; // Příznak, zda mají být nové tvary vyplněné
+    private Polygon.LineType currentLineType = Polygon.LineType.SOLID;
+    private boolean isFilledMode = false;
+    private Color currentColor = Color.RED;
+    private int currentThickness = 1;
 
-    private enum Tool { LINE, RECTANGLE, ELLIPSE, POLYGON }
+    private enum Tool { LINE, RECTANGLE, SQUARE, ELLIPSE, CIRCLE, POLYGON, EDIT, MOVE, ERASE, DELETE, BUCKET }
     private Tool currentTool = Tool.LINE;
 
+    private Point selectedPoint = null;
+    private Polygon selectedPolygon = null;
+    private Point lastMousePos = null;
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new App(800, 600).start());
+        SwingUtilities.invokeLater(() -> new App(1100, 750).start());
     }
 
     public App(int width, int height) {
-        JFrame frame = new JFrame("PGRF1 Paint - Unified System");
+        JFrame frame = new JFrame("PGRF1 Paint - Pro System");
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        raster = new RasterBufferedImage(width, height);
-        lineRasterizer = new TrivRasterizer(raster, Color.RED);
+        raster = new RasterBufferedImage(width, height - 150);
+        lineRasterizer = new TrivRasterizer(raster, currentColor);
         canvasRasterizer = new CanvasRasterizer(lineRasterizer);
         lineCanvas = new LineCanvas();
 
         panel = new JPanel() {
-            @Serial
-            private static final long serialVersionUID = 1L;
-            @Override
-            public void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                raster.repaint(g);
-            }
+            @Serial private static final long serialVersionUID = 1L;
+            @Override public void paintComponent(Graphics g) { super.paintComponent(g); raster.repaint(g); }
         };
-        panel.setPreferredSize(new Dimension(width, height));
+        panel.setPreferredSize(new Dimension(width, height - 150));
 
+        frame.add(createControlPanel(), BorderLayout.NORTH);
         frame.add(panel, BorderLayout.CENTER);
         frame.pack();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
         createCallbacks();
     }
 
-    private void start() {
-        redraw();
+    private JPanel createControlPanel() {
+        JPanel mainCtrl = new JPanel(new BorderLayout());
+        mainCtrl.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+        JPanel toolPanel = new JPanel(new GridLayout(2, 6, 5, 5));
+        String[] toolNames = {"Čára", "Obd.", "Čtverec", "Elipsa", "Kruh", "Poly", "Edit", "Posun", "Bod-X", "Smazat", "Kyblík"};
+        Tool[] tools = Tool.values();
+
+        for (int i = 0; i < toolNames.length; i++) {
+            final Tool t = (i < tools.length) ? tools[i] : Tool.LINE;
+            JButton btn = new JButton(toolNames[i]);
+            btn.addActionListener(e -> currentTool = t);
+            toolPanel.add(btn);
+        }
+
+        JPanel settingsPanel = new JPanel();
+        JButton colorBtn = new JButton("Barva");
+        colorBtn.setBackground(currentColor);
+        colorBtn.addActionListener(e -> {
+            Color c = JColorChooser.showDialog(null, "Barva", currentColor);
+            if (c != null) { currentColor = c; colorBtn.setBackground(c); }
+        });
+
+        JSlider thickSlider = new JSlider(1, 20, 1);
+        thickSlider.addChangeListener(e -> currentThickness = thickSlider.getValue());
+
+        String[] styles = {"Plná", "Tečkovaná", "Čárkovaná"};
+        JComboBox<String> styleCombo = new JComboBox<>(styles);
+        styleCombo.addActionListener(e -> currentLineType = Polygon.LineType.values()[styleCombo.getSelectedIndex()]);
+
+        JCheckBox fillCheck = new JCheckBox("Auto-výplň");
+        fillCheck.addActionListener(e -> isFilledMode = fillCheck.isSelected());
+
+        JButton clearBtn = new JButton("Vymazat plátno");
+        clearBtn.addActionListener(e -> { lineCanvas.clear(); redraw(); });
+
+        settingsPanel.add(colorBtn);
+        settingsPanel.add(new JLabel(" Tloušťka: "));
+        settingsPanel.add(thickSlider);
+        settingsPanel.add(styleCombo);
+        settingsPanel.add(fillCheck);
+        settingsPanel.add(clearBtn);
+
+        mainCtrl.add(toolPanel, BorderLayout.WEST);
+        mainCtrl.add(settingsPanel, BorderLayout.CENTER);
+        return mainCtrl;
     }
 
     private void createCallbacks() {
         MouseAdapter ma = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                Point clickPoint = new Point(e.getX(), e.getY());
-                if (currentTool == Tool.POLYGON) {
-                    if (SwingUtilities.isLeftMouseButton(e)) {
-                        handlePolygonPoint(clickPoint);
-                    } else if (SwingUtilities.isRightMouseButton(e)) {
-                        finishCurrentPolygon();
+                lastMousePos = new Point(e.getX(), e.getY());
+
+                if (currentTool == Tool.BUCKET) {
+                    lineRasterizer.seedFill(e.getX(), e.getY(), currentColor.getRGB());
+                    panel.repaint();
+                    return;
+                }
+
+                if (isTransformationTool()) findSelection(e.getX(), e.getY());
+
+                if (selectedPolygon != null) {
+                    if (currentTool == Tool.DELETE) {
+                        lineCanvas.getShapes().remove(selectedPolygon);
+                        redraw();
+                    } else if (currentTool == Tool.ERASE && selectedPoint != null) {
+                        selectedPolygon.getPoints().remove(selectedPoint);
+                        if (selectedPolygon instanceof Ellipse) ((Ellipse) selectedPolygon).setPerfect(false);
+                        if (selectedPolygon.getPoints().size() < 2) lineCanvas.getShapes().remove(selectedPolygon);
+                        redraw();
                     }
-                } else {
-                    a = clickPoint;
+                }
+
+                if (isDrawingTool()) {
+                    a = new Point(e.getX(), e.getY());
+                    if (currentTool == Tool.POLYGON) {
+                        if (SwingUtilities.isLeftMouseButton(e)) handlePolygonPoint(a);
+                        else finishCurrentPolygon();
+                    }
                 }
                 panel.requestFocusInWindow();
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                if (currentTool == Tool.POLYGON) return;
-                b = getFinalPoint(e.getX(), e.getY());
-                lineCanvas.addShape(createShape(a, b));
-                redraw();
-            }
-
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                if (currentTool == Tool.POLYGON) return;
-                b = getFinalPoint(e.getX(), e.getY());
-                redraw();
-                renderPreview(createShape(a, b));
-            }
-        };
-
-        panel.addMouseListener(ma);
-        panel.addMouseMotionListener(ma);
-
-        panel.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_CONTROL -> isDottedMode = true;
-                    case KeyEvent.VK_SHIFT -> isSnapMode = true;
-                    case KeyEvent.VK_F -> {
-                        isFilledMode = !isFilledMode; // Přepnutí režimu výplně
-                        System.out.println("Fill Mode: " + (isFilledMode ? "ON" : "OFF"));
-                    }
-                    case KeyEvent.VK_C -> {
-                        lineCanvas.clear();
-                        redraw();
-                    }
-                    case KeyEvent.VK_ENTER -> finishCurrentPolygon();
-                    case KeyEvent.VK_1 -> currentTool = Tool.LINE;
-                    case KeyEvent.VK_2 -> currentTool = Tool.RECTANGLE;
-                    case KeyEvent.VK_3 -> currentTool = Tool.ELLIPSE;
-                    case KeyEvent.VK_4 -> currentTool = Tool.POLYGON;
+                if (!isDrawingTool() || currentTool == Tool.POLYGON) {
+                    selectedPoint = null; selectedPolygon = null;
+                } else {
+                    b = getFinalPoint(e.getX(), e.getY(), currentTool);
+                    lineCanvas.addShape(createShape(a, b, currentTool));
+                    redraw();
                 }
             }
 
             @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_CONTROL) isDottedMode = false;
-                if (e.getKeyCode() == KeyEvent.VK_SHIFT) isSnapMode = false;
+            public void mouseDragged(MouseEvent e) {
+                if (selectedPolygon != null && (currentTool == Tool.EDIT || currentTool == Tool.MOVE)) {
+                    int dx = e.getX() - lastMousePos.getX();
+                    int dy = e.getY() - lastMousePos.getY();
+                    if (currentTool == Tool.EDIT && selectedPoint != null) {
+                        selectedPoint.setX(e.getX()); selectedPoint.setY(e.getY());
+                        if (selectedPolygon instanceof Ellipse) ((Ellipse) selectedPolygon).setPerfect(false);
+                    } else if (currentTool == Tool.MOVE) {
+                        selectedPolygon.move(dx, dy);
+                    }
+                    lastMousePos = new Point(e.getX(), e.getY());
+                    redraw();
+                } else if (isDrawingTool() && currentTool != Tool.POLYGON) {
+                    b = getFinalPoint(e.getX(), e.getY(), currentTool);
+                    redraw();
+                    renderPreview(createShape(a, b, currentTool));
+                }
             }
-        });
+        };
+        panel.addMouseListener(ma);
+        panel.addMouseMotionListener(ma);
         panel.setFocusable(true);
-        panel.requestFocusInWindow();
     }
 
-    private Point getFinalPoint(int x, int y) {
-        Point p = new Point(x, y);
-        return isSnapMode ? AngleCalculator.getSnappedPoint(a, p) : p;
+    private void findSelection(int x, int y) {
+        selectedPoint = null; selectedPolygon = null;
+        ArrayList<Polygon> shapes = lineCanvas.getShapes();
+        for (int i = shapes.size() - 1; i >= 0; i--) {
+            Polygon s = shapes.get(i);
+            for (Point p : s.getPoints()) {
+                if (Math.hypot(p.getX() - x, p.getY() - y) < 15) {
+                    selectedPoint = p; selectedPolygon = s; return;
+                }
+            }
+            if (s.contains(x, y)) { selectedPolygon = s; return; }
+        }
     }
 
-    private Polygon createShape(Point p1, Point p2) {
-        Polygon shape = switch (currentTool) {
-            case LINE -> new Line(p1, p2, Color.RED, isDottedMode);
-            case RECTANGLE -> new Rectangle(p1, p2, Color.RED, isDottedMode);
-            case ELLIPSE -> {
+    private Polygon createShape(Point p1, Point p2, Tool tool) {
+        Polygon shape = switch (tool) {
+            case SQUARE, RECTANGLE -> new Rectangle(p1, p2, currentColor, currentLineType);
+            case CIRCLE, ELLIPSE -> {
                 int centerX = (p1.getX() + p2.getX()) / 2;
                 int centerY = (p1.getY() + p2.getY()) / 2;
-                Point center = new Point(centerX, centerY);
                 int rx = Math.abs(p2.getX() - p1.getX()) / 2;
                 int ry = Math.abs(p2.getY() - p1.getY()) / 2;
-                yield new Ellipse(center, rx, ry, Color.RED, isDottedMode);
+                yield new Ellipse(new Point(centerX, centerY), rx, ry, currentColor, currentLineType);
             }
-            default -> new Line(p1, p2, Color.RED, isDottedMode);
+            default -> new Line(p1, p2, currentColor, currentLineType);
         };
-
+        shape.setThickness(currentThickness);
         shape.setFilled(isFilledMode);
         return shape;
     }
 
+    private Point getFinalPoint(int x, int y, Tool tool) {
+        if (tool == Tool.SQUARE || tool == Tool.CIRCLE) {
+            int dx = x - a.getX();
+            int dy = y - a.getY();
+            int size = Math.max(Math.abs(dx), Math.abs(dy));
+            return new Point(a.getX() + (dx > 0 ? size : -size), a.getY() + (dy > 0 ? size : -size));
+        }
+        return new Point(x, y);
+    }
+
     private void handlePolygonPoint(Point p) {
-        ArrayList<models.Polygon> shapes = lineCanvas.getShapes();
-        models.Polygon poly;
-
+        ArrayList<Polygon> shapes = lineCanvas.getShapes();
+        Polygon poly;
         if (shapes.isEmpty() || shapes.get(shapes.size() - 1).isClosed()) {
-            poly = new models.Polygon(Color.RED, isDottedMode);
-            poly.setClosed(false);
-            poly.setFilled(isFilledMode);
+            poly = new Polygon(currentColor, currentLineType);
+            poly.setClosed(false); poly.setFilled(isFilledMode);
+            poly.setThickness(currentThickness);
             lineCanvas.addShape(poly);
-        } else {
-            poly = shapes.get(shapes.size() - 1);
-        }
-
-        // Snapping k předchozímu bodu
-        if (isSnapMode && !poly.getPoints().isEmpty()) {
-            p = AngleCalculator.getSnappedPoint(poly.getPoints().get(poly.getPoints().size() - 1), p);
-        }
-
-        poly.addPoint(p);
-        redraw();
+        } else { poly = shapes.get(shapes.size() - 1); }
+        poly.addPoint(p); redraw();
     }
 
     private void finishCurrentPolygon() {
-        ArrayList<models.Polygon> shapes = lineCanvas.getShapes();
+        ArrayList<Polygon> shapes = lineCanvas.getShapes();
         if (!shapes.isEmpty()) {
-            models.Polygon lastShape = shapes.get(shapes.size() - 1);
-            if (!lastShape.isClosed()) {
-                lastShape.setClosed(true);
-                redraw();
-            }
+            Polygon lastShape = shapes.get(shapes.size() - 1);
+            if (!lastShape.isClosed()) { lastShape.setClosed(true); redraw(); }
         }
     }
 
     private void redraw() {
-        raster.setClearColor(0xaaaaaa);
         raster.clear();
         canvasRasterizer.rasterize(lineCanvas);
         panel.repaint();
     }
 
-    private void renderPreview(models.Polygon preview) {
-        // Pokud je zapnutá výplň, musíme ji nejdříve vykreslit v náhledu
-        if (preview.isFilled()) {
-            lineRasterizer.setColor(preview.getColor());
-            lineRasterizer.fillPolygon(preview);
-        }
-
-        if (preview instanceof Ellipse) {
-            lineRasterizer.setColor(preview.getColor());
+    private void renderPreview(Polygon preview) {
+        lineRasterizer.setColor(preview.getColor());
+        lineRasterizer.setThickness(preview.getThickness());
+        if (preview.isFilled()) lineRasterizer.fillPolygon(preview);
+        if (preview instanceof Ellipse && ((Ellipse) preview).isPerfect()) {
             lineRasterizer.rasterize((Ellipse) preview);
         } else {
             LineCanvas temp = new LineCanvas();
@@ -224,29 +270,7 @@ public class App {
         panel.repaint();
     }
 
-    private void findClosestPoint(int x, int y) {
-        double minDistance = 15; // Tolerance v pixelech pro "chycení" bodu
-        selectedPoint = null;
-        selectedPolygon = null;
-
-        ArrayList<models.Polygon> shapes = lineCanvas.getShapes();
-
-        // Procházíme od konce, abychom nejdříve kontrolovali nejnovější (horní) tvary
-        for (int i = shapes.size() - 1; i >= 0; i--) {
-            models.Polygon shape = shapes.get(i);
-
-            for (models.Point p : shape.getPoints()) {
-                double dist = Math.sqrt(Math.pow(p.getX() - x, 2) + Math.pow(p.getY() - y, 2));
-
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    selectedPoint = p;
-                    selectedPolygon = shape;
-
-                    // Jakmile najdeme nejbližší bod v nejvrchnějším tvaru, končíme hledání
-                    return;
-                }
-            }
-        }
-    }
+    private boolean isDrawingTool() { return currentTool.ordinal() <= Tool.POLYGON.ordinal(); }
+    private boolean isTransformationTool() { return !isDrawingTool() && currentTool != Tool.BUCKET; }
+    private void start() { redraw(); }
 }
