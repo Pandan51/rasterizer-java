@@ -13,6 +13,9 @@ public class TrivRasterizer implements Rasterizer {
     private int color;
     private int thickness = 1;
 
+    /**
+     * Inicializuje základní rasterizér s odkazem na paměťový rastr.
+     */
     public TrivRasterizer(Raster raster, Color color) {
         this.raster = raster;
         this.color = color.getRGB();
@@ -20,9 +23,13 @@ public class TrivRasterizer implements Rasterizer {
 
     @Override
     public void setColor(Color color) { this.color = color.getRGB(); }
+
     @Override
     public void setThickness(int thickness) { this.thickness = thickness; }
 
+    /**
+     * Vykreslí jednotlivý pixel s ohledem na aktuálně nastavenou tloušťku čáry.
+     */
     private void setThickPixel(int x, int y) {
         if (x < 0 || y < 0 || x >= raster.getWidth() || y >= raster.getHeight()) return;
         if (thickness <= 1) {
@@ -40,7 +47,7 @@ public class TrivRasterizer implements Rasterizer {
     }
 
     /**
-     * Bucket Fill (Seed Fill) - Iterative approach using a Queue.
+     * Bucket Fill (Seed Fill) - Rastrové vybarvování souvislé plochy s využitím fronty.
      */
     public void seedFill(int x, int y, int fillRGB) {
         if (x < 0 || y < 0 || x >= raster.getWidth() || y >= raster.getHeight()) return;
@@ -65,6 +72,9 @@ public class TrivRasterizer implements Rasterizer {
         }
     }
 
+    /**
+     * Připraví parametry a krokování pro vykreslení úsečky (včetně tečkovaných/čárkovaných stylů).
+     */
     @Override
     public void rasterize(Line line) {
         int step = (line.getLineType() == Polygon.LineType.DOTTED) ? 5 : 1;
@@ -73,6 +83,9 @@ public class TrivRasterizer implements Rasterizer {
                 line.getB().getX(), line.getB().getY(), step, dashLen);
     }
 
+    /**
+     * Samotný kreslicí algoritmus pro úsečku, iteruje přes řídící osu a počítá odpovídající souřadnice.
+     */
     private void drawGenericLine(int x1, int y1, int x2, int y2, int step, int dashLen) {
         double dx = x2 - x1; double dy = y2 - y1;
         int count = 0;
@@ -107,6 +120,9 @@ public class TrivRasterizer implements Rasterizer {
         }
     }
 
+    /**
+     * Kreslení dokonalé elipsy pomocí modifikovaného Bresenhamova algoritmu (Midpoint).
+     */
     @Override
     public void rasterize(Ellipse ellipse) {
         int x0 = ellipse.getCenter().getX();
@@ -115,7 +131,6 @@ public class TrivRasterizer implements Rasterizer {
         int b = ellipse.getRy();
         if (a <= 0 || b <= 0) return;
 
-        // Midpoint Ellipse Algorithm (Bresenham-like)
         long a2 = (long) a * a; long b2 = (long) b * b;
         long twoA2 = 2 * a2; long twoB2 = 2 * b2;
         int x = 0; int y = b;
@@ -136,6 +151,9 @@ public class TrivRasterizer implements Rasterizer {
         }
     }
 
+    /**
+     * Využívá symetrie elipsy pro vykreslení bodu do všech čtyř kvadrantů najednou.
+     */
     private void drawEllipsePoints(int x0, int y0, int x, int y) {
         setThickPixel(x0 + x, y0 + y);
         setThickPixel(x0 - x, y0 + y);
@@ -144,7 +162,7 @@ public class TrivRasterizer implements Rasterizer {
     }
 
     /**
-     * Vector Fill (Scanline Algorithm) for Polygons.
+     * Vektorové vyplnění polygonu pomocí Scanline algoritmu. Hledá a vybarvuje sekce mezi průsečíky.
      */
     public void fillPolygon(Polygon poly) {
         List<Point> points = poly.getPoints();
@@ -179,6 +197,10 @@ public class TrivRasterizer implements Rasterizer {
             }
         }
     }
+
+    /**
+     * Pomocná metoda pro vykreslení přesného jednoho pixelu bez ohledu na tloušťku (např. pro UI tečky).
+     */
     public void rasterizePoint(int x, int y) {
         if (x >= 0 && y >= 0 && x < raster.getWidth() && y < raster.getHeight()) {
             raster.setPixel(x, y, color);

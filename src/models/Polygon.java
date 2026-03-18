@@ -15,7 +15,7 @@ public class Polygon {
     private boolean isFilled;
 
     /**
-     * Unified constructor requiring all color properties.
+     * Hlavní konstruktor tvaru. Definuje kompletní parametry vzhledu.
      */
     public Polygon(Color color, Color fillColor, LineType type) {
         this.points = new ArrayList<>();
@@ -26,7 +26,14 @@ public class Polygon {
         this.isFilled = false;
     }
 
+    /**
+     * Přidá další vrchol do polygonu.
+     */
     public void addPoint(Point point) { points.add(point); }
+
+    /**
+     * Vrátí seznam všech vrcholů tvaru.
+     */
     public ArrayList<Point> getPoints() { return points; }
 
     public Color getColor() { return color; }
@@ -42,13 +49,19 @@ public class Polygon {
     public void setLineType(LineType type) { this.lineType = type; }
 
     public boolean isClosed() { return isClosed; }
-    public void setClosed(boolean closed) { isClosed = closed; }
+    public void setClosed(boolean closed) { this.isClosed = closed; }
 
     public boolean isFilled() { return isFilled; }
-    public void setFilled(boolean filled) { isFilled = filled; }
+    public void setFilled(boolean filled) { this.isFilled = filled; }
 
+    /**
+     * Vyprázdní seznam vrcholů tvaru.
+     */
     public void clearPoints() { points.clear(); }
 
+    /**
+     * Posune celý polygon o zadanou odchylku DX a DY na obou osách.
+     */
     public void move(int dx, int dy) {
         for (Point p : points) {
             p.setX(p.getX() + dx);
@@ -56,6 +69,9 @@ public class Polygon {
         }
     }
 
+    /**
+     * Využívá Ray Casting algoritmus k ověření, zda se dané souřadnice x a y nacházejí uvnitř polygonu.
+     */
     public boolean contains(int x, int y) {
         if (points.size() < 3) return false;
         boolean inside = false;

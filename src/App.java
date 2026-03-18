@@ -49,10 +49,16 @@ public class App {
     private JComboBox<String> styleCombo;
     private JCheckBox fillCheck;
 
+    /**
+     * Vstupní bod programu. Vytvoří a spustí aplikaci na hlavním vlákně Swing.
+     */
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new App(1100, 750).redraw());
+        SwingUtilities.invokeLater(() -> new App(1100, 750).start());
     }
 
+    /**
+     * Konstruktor aplikace. Inicializuje okno, rastry, plátno a komponenty uživatelského rozhraní.
+     */
     public App(int width, int height) {
         JFrame frame = new JFrame("Malovani");
         frame.setLayout(new BorderLayout());
@@ -78,6 +84,9 @@ public class App {
         createCallbacks();
     }
 
+    /**
+     * Sestaví a vrátí horní ovládací panel s tlačítky nástrojů a nastavením vlastností.
+     */
     private JPanel createControlPanel() {
         JPanel mainCtrl = new JPanel(new BorderLayout());
         mainCtrl.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -175,6 +184,9 @@ public class App {
         return mainCtrl;
     }
 
+    /**
+     * Vytvoří a připojí posluchače událostí pro myš a klávesnici (kreslení, úpravy tvarů).
+     */
     private void createCallbacks() {
         MouseAdapter ma = new MouseAdapter() {
             @Override
@@ -268,6 +280,9 @@ public class App {
         panel.requestFocusInWindow();
     }
 
+    /**
+     * Synchronizuje hodnoty UI prvků (barvy, posuvníky) s právě vybraným objektem.
+     */
     private void syncUIWithSelected() {
         if (selectedPolygon != null) {
             currentColor = selectedPolygon.getColor();
@@ -285,6 +300,9 @@ public class App {
         }
     }
 
+    /**
+     * Zjistí, zda se na daných souřadnicích nachází nějaký tvar nebo jeho editační bod.
+     */
     private void findSelection(int x, int y) {
         selectedPoint = null; selectedPolygon = null;
         ArrayList<Polygon> shapes = lineCanvas.getShapes();
@@ -299,6 +317,9 @@ public class App {
         }
     }
 
+    /**
+     * Tovární metoda pro generování konkrétního typu tvaru na základě zvoleného nástroje.
+     */
     private Polygon createShape(Point p1, Point p2, Tool tool) {
         Polygon shape = switch (tool) {
             case SQUARE, RECTANGLE -> new Rectangle(p1, p2, currentColor, currentType);
@@ -317,6 +338,9 @@ public class App {
         return shape;
     }
 
+    /**
+     * Vypočítá konečnou pozici druhého bodu s ohledem na snapping (Shift) nebo vynucený poměr stran (Čtverec/Kruh).
+     */
     private Point getFinalPoint(int x, int y, Tool tool) {
         Point p = new Point(x, y);
         if (isSnapMode) p = AngleCalculator.getSnappedPoint(a, p);
@@ -329,6 +353,9 @@ public class App {
         return p;
     }
 
+    /**
+     * Zpracovává postupně přidávané body pro nástroj Polygon.
+     */
     private void handlePolygonPoint(Point p) {
         ArrayList<Polygon> shapes = lineCanvas.getShapes();
         Polygon poly;
@@ -339,17 +366,15 @@ public class App {
             lineCanvas.addShape(poly);
         } else { poly = shapes.get(shapes.size() - 1); }
 
-        // OPRAVA: Snapping k předchozímu bodu v rámci polygonu
-        if (isSnapMode && !poly.getPoints().isEmpty()) {
-            p = AngleCalculator.getSnappedPoint(poly.getPoints().get(poly.getPoints().size() - 1), p);
-        }
-
         poly.addPoint(p);
         selectedPolygon = poly;
         syncUIWithSelected();
         redraw();
     }
 
+    /**
+     * Uzavře aktuálně kreslený polygon.
+     */
     private void finishCurrentPolygon() {
         ArrayList<Polygon> shapes = lineCanvas.getShapes();
         if (!shapes.isEmpty()) {
@@ -358,13 +383,18 @@ public class App {
         }
     }
 
+    /**
+     * Smaže celý rastr a provede kompletní překreslení všech objektů z plátna.
+     */
     private void redraw() {
         raster.clear();
-        // Předáváme selectedPolygon, aby rasterizér věděl, kde vykreslit úchopy
         canvasRasterizer.rasterize(lineCanvas, selectedPolygon);
         panel.repaint();
     }
 
+    /**
+     * Zajišťuje vykreslování dočasného tvaru ("ducha") během tažení myší.
+     */
     private void renderPreview(Polygon preview) {
         if (preview.isFilled()) {
             lineRasterizer.setColor(preview.getFillColor());
@@ -382,6 +412,18 @@ public class App {
         panel.repaint();
     }
 
+    /**
+     * Zjistí, zda aktuálně zvolený nástroj slouží ke kreslení nových tvarů.
+     */
     private boolean isDrawingTool() { return currentTool.ordinal() <= Tool.POLYGON.ordinal(); }
+
+    /**
+     * Zjistí, zda aktuálně zvolený nástroj slouží k úpravě již existujících tvarů.
+     */
     private boolean isTransformationTool() { return !isDrawingTool() && currentTool != Tool.BUCKET; }
+
+    /**
+     * Úvodní překreslení plochy po startu.
+     */
+    public void start() { redraw(); }
 }

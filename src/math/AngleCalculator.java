@@ -1,10 +1,11 @@
 package math;
 import models.Point;
 
-
 public class AngleCalculator {
 
-
+    /**
+     * Vypočítá absolutní úhel (ve stupních) svíraný dvěma body na plátně.
+     */
     public static double getAngle(Point A, Point B){
 
         int x_A = A.getX();
@@ -22,6 +23,9 @@ public class AngleCalculator {
         return angleDeg;
     }
 
+    /**
+     * Najde novou pozici pro bod B, která je "přichycená" (snapped) do nejbližšího 45stupňového kroku.
+     */
     public static Point getSnappedB(Point A, Point B, double angle){
         int x_A = A.getX();
         int x_B = B.getX();
@@ -65,6 +69,9 @@ public class AngleCalculator {
         return newPoint;
     }
 
+    /**
+     * Vrátí bod přichycený k nejbližší mřížce 45° vůči výchozímu bodu A.
+     */
     public static Point getSnappedPoint(Point A, Point B)
     {
         double angle = getAngle(A,B);

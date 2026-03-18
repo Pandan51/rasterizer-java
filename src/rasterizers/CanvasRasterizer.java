@@ -11,12 +11,15 @@ public class CanvasRasterizer {
 
     private final Rasterizer lineRasterizer;
 
+    /**
+     * Vytvoří koordinátora vykreslování nad konkrétním rasterizérem.
+     */
     public CanvasRasterizer(Rasterizer lineRasterizer) {
         this.lineRasterizer = lineRasterizer;
     }
 
     /**
-     * Vykreslí celé plátno s volitelným zvýrazněním vybraného objektu.
+     * Projde seznam tvarů v plátně a vykreslí je. Dodržuje pořadí: výplň, obrys a případně modré úchopy výběru.
      */
     public void rasterize(LineCanvas lineCanvas, Polygon selectedPolygon) {
         for (Polygon shape : lineCanvas.getShapes()) {
@@ -53,7 +56,7 @@ public class CanvasRasterizer {
     }
 
     /**
-     * Vykreslí malé čtverečky (úchopy) v každém vrcholu vybraného polygonu.
+     * Vykreslí malé čtverečky (úchopy) v každém vrcholu právě vybraného polygonu pro vizuální odezvu.
      */
     private void drawSelectionHandles(Polygon shape) {
         lineRasterizer.setColor(Color.BLUE); // Úchopy budou modré
@@ -72,6 +75,9 @@ public class CanvasRasterizer {
         }
     }
 
+    /**
+     * Vykreslí jednu hranu polygonu použitím vlastností z mateřského tvaru.
+     */
     private void drawEdge(Point a, Point b, Polygon shape) {
         Line edge = new Line(a, b, shape.getColor(), shape.getLineType());
         edge.setThickness(shape.getThickness());
