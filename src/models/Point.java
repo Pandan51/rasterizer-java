@@ -16,4 +16,8 @@ public class Point {
     public int getY() {
         return y;
     }
+
+    // Přidáno pro možnost posouvání bodů
+    public void setX(int x) { this.x = x; }
+    public void setY(int y) { this.y = y; }
 }

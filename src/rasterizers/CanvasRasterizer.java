@@ -18,11 +18,19 @@ public class CanvasRasterizer {
         for (Polygon shape : lineCanvas.getShapes()) {
             lineRasterizer.setColor(shape.getColor());
 
-            // Pokud jde o elipsu, použijeme přesný algoritmus (Bresenham)
-            if (shape instanceof Ellipse) {
+            // --- OPRAVA: Implementace výplně pro uložené objekty ---
+            // Pokud je objekt označen jako vyplněný, nejdříve zavoláme algoritmus Scanline
+            if (shape.isFilled() && lineRasterizer instanceof TrivRasterizer) {
+                ((TrivRasterizer) lineRasterizer).fillPolygon(shape);
+            }
+
+            // Pokud jde o elipsu a je stále "dokonalá", použijeme Bresenhama
+            if (shape instanceof Ellipse && ((Ellipse) shape).isPerfect()) {
                 lineRasterizer.rasterize((Ellipse) shape);
             } else {
+                // Jinak vykreslíme body jako polygon (včetně "narušené" elipsy)
                 ArrayList<Point> points = shape.getPoints();
+
                 if (points.size() < 2) continue;
 
                 // Vykreslení spojnic mezi body (1-2, 2-3, ...)

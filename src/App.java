@@ -223,4 +223,30 @@ public class App {
         }
         panel.repaint();
     }
+
+    private void findClosestPoint(int x, int y) {
+        double minDistance = 15; // Tolerance v pixelech pro "chycení" bodu
+        selectedPoint = null;
+        selectedPolygon = null;
+
+        ArrayList<models.Polygon> shapes = lineCanvas.getShapes();
+
+        // Procházíme od konce, abychom nejdříve kontrolovali nejnovější (horní) tvary
+        for (int i = shapes.size() - 1; i >= 0; i--) {
+            models.Polygon shape = shapes.get(i);
+
+            for (models.Point p : shape.getPoints()) {
+                double dist = Math.sqrt(Math.pow(p.getX() - x, 2) + Math.pow(p.getY() - y, 2));
+
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    selectedPoint = p;
+                    selectedPolygon = shape;
+
+                    // Jakmile najdeme nejbližší bod v nejvrchnějším tvaru, končíme hledání
+                    return;
+                }
+            }
+        }
+    }
 }

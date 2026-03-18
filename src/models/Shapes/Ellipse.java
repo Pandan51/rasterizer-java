@@ -7,6 +7,8 @@ import java.awt.*;
 public class Ellipse extends Polygon {
     private Point center;
     private int rx, ry;
+    private boolean isPerfect = true; // Pokud je true, kreslí se Bresenhamem
+
 
     public Ellipse(Point center, int rx, int ry, Color color, boolean isDotted) {
         super(color, isDotted);
@@ -30,6 +32,7 @@ public class Ellipse extends Polygon {
         }
     }
 
+    public boolean isPerfect() { return isPerfect; }
     public Point getCenter() { return center; }
     public int getRx() { return rx; }
     public int getRy() { return ry; }
