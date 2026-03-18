@@ -16,15 +16,16 @@ public class CanvasRasterizer {
 
     public void rasterize(LineCanvas lineCanvas) {
         for (Polygon shape : lineCanvas.getShapes()) {
-            lineRasterizer.setColor(shape.getColor());
             lineRasterizer.setThickness(shape.getThickness());
 
-            // 1. Vector Fill (Scanline)
+            // 1. Výplň (použije barvu výplně)
             if (shape.isFilled() && lineRasterizer instanceof TrivRasterizer) {
+                lineRasterizer.setColor(shape.getFillColor());
                 ((TrivRasterizer) lineRasterizer).fillPolygon(shape);
             }
 
-            // 2. Outline
+            // 2. Obrys (použije barvu čáry)
+            lineRasterizer.setColor(shape.getColor());
             if (shape instanceof Ellipse && ((Ellipse) shape).isPerfect()) {
                 lineRasterizer.rasterize((Ellipse) shape);
             } else {
@@ -35,7 +36,8 @@ public class CanvasRasterizer {
                     drawEdge(points.get(i), points.get(i + 1), shape);
                 }
 
-                if (points.size() > 2 && shape.isClosed()) {
+                // Spojení konce se začátkem pouze pokud je tvar uzavřený
+                if (shape.isClosed() && points.size() > 2) {
                     drawEdge(points.get(points.size() - 1), points.get(0), shape);
                 }
             }
@@ -43,7 +45,6 @@ public class CanvasRasterizer {
     }
 
     private void drawEdge(Point a, Point b, Polygon shape) {
-        // We create a temporary line object that carries the parent's lineType/thickness
         Line edge = new Line(a, b, shape.getColor(), shape.getLineType());
         edge.setThickness(shape.getThickness());
         lineRasterizer.rasterize(edge);

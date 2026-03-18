@@ -4,13 +4,17 @@ import models.Point;
 import models.Polygon;
 import java.awt.*;
 
+/**
+ * Model elipsy.
+ */
 public class Ellipse extends Polygon {
     private Point center;
     private int rx, ry;
     private boolean isPerfect = true;
 
     public Ellipse(Point center, int rx, int ry, Color color, Polygon.LineType type) {
-        super(color, type);
+        // Inicializujeme bez výplně v konstruktoru.
+        super(color, null, type);
         this.center = center;
         this.rx = rx;
         this.ry = ry;
